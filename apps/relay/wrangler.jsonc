@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Nama ini HARUS sama persis dengan nama Worker di dashboard Cloudflare.
+  "name": "game-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOM", "class_name": "Room" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  "vars": {
+    // Situs mana saja yang boleh memakai relay ini (dipisah koma). "*" hanya cocok satu label subdomain.
+    // Sebelum rilis publik: ganti dengan domain Anda sendiri dan hapus https://*.vercel.app
+    "ALLOWED_ORIGINS": "http://localhost:3000,https://*.vercel.app"
+  },
+  "observability": { "enabled": true }
+}
