@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   // Nama ini HARUS sama persis dengan nama Worker di dashboard Cloudflare.
-  "name": "game-relay",
+  // apps/relay/wrangler.jsonc
+"name": "consolealpha",
   "main": "src/index.ts",
   "compatibility_date": "2025-09-01",
   "durable_objects": {
