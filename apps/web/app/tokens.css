@@ -1,0 +1,93 @@
+/* Dihasilkan dari tokens.json oleh build-tokens.py. Jangan diedit tangan. */
+:root {
+  --color-bg: #0d1017;
+  --color-surface: #161a24;
+  --color-surface-raised: #1f2431;
+  --color-border: #2c3343;
+  --color-border-input: #7d8798;
+  --color-text: #f2f4f8;
+  --color-text-muted: #a9b2c1;
+  --color-accent: #9b8cff;
+  --color-on-accent: #0b0e17;
+  --color-danger: #ff7b7b;
+  --color-on-danger: #1a0707;
+  --color-success: #4cd694;
+  --color-on-success: #04170d;
+  --color-warning: #f5c451;
+  --color-on-warning: #1c1400;
+  --color-player-1: #f5a524;
+  --color-player-2: #56b4e9;
+  --color-player-3: #2fcb9a;
+  --color-player-4: #f0e442;
+  --color-player-5: #4c8dff;
+  --color-player-6: #ff6b5e;
+  --color-player-7: #e58ad0;
+  --color-player-8: #c9d1de;
+  --color-on-player: #0b0e17;
+  --color-qr-bg: #ffffff;
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: Fredoka, Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-xs: 0.75rem;
+  --text-xs-line: 1rem;
+  --text-xs-weight: 500;
+  --text-sm: 0.875rem;
+  --text-sm-line: 1.25rem;
+  --text-sm-weight: 400;
+  --text-base: 1rem;
+  --text-base-line: 1.5rem;
+  --text-base-weight: 400;
+  --text-lg: 1.25rem;
+  --text-lg-line: 1.75rem;
+  --text-lg-weight: 600;
+  --text-xl: 1.75rem;
+  --text-xl-line: 2.125rem;
+  --text-xl-weight: 700;
+  --text-display: 2.5rem;
+  --text-display-line: 2.75rem;
+  --text-display-weight: 700;
+  --text-huge: 6rem;
+  --text-huge-line: 6.25rem;
+  --text-huge-weight: 700;
+  --text-huge-tracking: 0.12em;
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.40), 0 2px 8px rgba(0,0,0,.30);
+  --shadow-pop: 0 16px 40px rgba(0,0,0,.55);
+  --shadow-focus: 0 0 0 0.1875rem var(--color-bg), 0 0 0 0.375rem var(--color-accent);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --safe-x: 5vw;
+  --safe-y: 5vh;
+  --touch-min: 3rem;
+  --touch-pad: 4rem;
+  color-scheme: dark;
+}
+
+html { font-size: 16px; }
+/* Skala tv: semua ukuran memakai rem, jadi satu baris ini membesarkan seluruh UI layar utama. */
+html[data-surface="tv"] { font-size: 24px; }
+
+body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans);
+       font-size: var(--text-base); line-height: var(--text-base-line); }
+
+:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; }
+  * { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+  [data-focus-scale] { transform: none !important; }
+}
