@@ -1,19 +1,32 @@
 "use client";
 
-// Layar utama (TV atau laptop): membuat sesi, menampilkan kode dan QR, menunjukkan pemain.
-// Vertical slice: setiap ketukan dari HP menaikkan penghitung, dan layar membalas "ack"
-// supaya HP bisa mengukur waktu bolak-balik (ping).
+// Layar utama (TV atau laptop): membuat sesi, menampilkan kode dan QR, lalu menjalankan
+// pesta: lobi -> menu -> hitung mundur -> lomba -> hasil. Logikanya ada di lib/party.ts;
+// halaman ini hanya menyambungkan relay, jam, papan ketik, dan tampilan.
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { LinkClient } from "../../lib/link";
-import type { CloseReason, Device, LinkStatus } from "../../lib/link";
-import { APP_NAME, RELAY_URL } from "../../lib/config";
-import PlayerBadge from "../../components/PlayerBadge";
+import type { CloseReason, LinkStatus } from "../../lib/link";
+import { Party, flushOut } from "../../lib/party";
+import type { Dir, View } from "../../lib/party";
+import { RELAY_URL } from "../../lib/config";
 import StatusBanner from "../../components/StatusBanner";
+import { CountdownScene, LobbyScene, MenuScene, RaceScene, ResultsScene } from "../../components/ScreenScenes";
 
 type Saved = { code: string; hostToken: string };
 const KEY = "link:screen";
+const TICK_MS = 50;
+
+const KEY_TO_DIR: Record<string, Dir> = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  Enter: "ok",
+  Escape: "back",
+  Backspace: "back",
+};
 
 function readSaved(): Saved | null {
   try {
@@ -42,7 +55,9 @@ async function stillExists(code: string): Promise<boolean> {
 
 async function createSession(): Promise<Saved> {
   const r = await fetch(`${RELAY_URL}/v1/sessions`, { method: "POST" });
-  if (!r.ok) throw new Error(r.status === 429 ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi." : "Relay tidak bisa dihubungi.");
+  if (!r.ok) {
+    throw new Error(r.status === 429 ? "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi." : "Relay tidak bisa dihubungi.");
+  }
   const j = (await r.json()) as { code: string; host_token: string };
   return { code: j.code, hostToken: j.host_token };
 }
@@ -52,12 +67,11 @@ export default function ScreenPage() {
   const [code, setCode] = useState<string | null>(null);
   const [status, setStatus] = useState<LinkStatus>("connecting");
   const [reason, setReason] = useState<CloseReason | undefined>();
-  const [players, setPlayers] = useState<Device[]>([]);
-  const [taps, setTaps] = useState<Record<number, number>>({});
+  const [view, setView] = useState<View>(() => new Party().view());
   const [qr, setQr] = useState("");
   const [origin, setOrigin] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const linkRef = useRef<LinkClient | null>(null);
+  const partyRef = useRef<Party | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.surface = "tv";
@@ -67,6 +81,7 @@ export default function ScreenPage() {
     };
   }, []);
 
+  // Sesi, sambungan relay, dan jam permainan.
   useEffect(() => {
     if (!RELAY_URL) {
       setError("Alamat relay belum diatur (NEXT_PUBLIC_RELAY_URL).");
@@ -74,11 +89,13 @@ export default function ScreenPage() {
     }
     let cancelled = false;
     let link: LinkClient | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const party = new Party();
+    partyRef.current = party;
     setError(null);
     setStatus("connecting");
     setReason(undefined);
-    setPlayers([]);
-    setTaps({});
+    setView(party.view());
 
     (async () => {
       try {
@@ -90,6 +107,10 @@ export default function ScreenPage() {
         }
         if (cancelled) return;
         setCode(s.code);
+
+        const flush = () => {
+          if (link) flushOut(party, link);
+        };
         link = new LinkClient({
           relayUrl: RELAY_URL,
           code: s.code,
@@ -99,22 +120,39 @@ export default function ScreenPage() {
             setStatus(st);
             setReason(r);
           },
-          onWelcome: (w) => setPlayers(w.devices.filter((d) => d.role === "controller")),
+          onWelcome: (w) => {
+            // Samakan dengan daftar dari relay: yang keluar saat layar terputus dihapus, yang ada ditambahkan.
+            const present = new Set(w.devices.filter((d) => d.role === "controller").map((d) => d.id));
+            for (const p of party.view().players) if (!present.has(p.id)) party.leave(p.id, Date.now());
+            for (const d of w.devices) if (d.role === "controller") party.join(d.id, d.nickname, Date.now());
+            flush();
+          },
           onJoined: (d) => {
             if (d.role !== "controller") return;
-            setPlayers((p) => [...p.filter((x) => x.id !== d.id), d].sort((a, b) => a.id - b.id));
+            party.join(d.id, d.nickname, Date.now());
+            flush();
           },
-          onLeft: (id) => setPlayers((p) => p.filter((x) => x.id !== id)),
+          onLeft: (id) => {
+            party.leave(id, Date.now());
+            flush();
+          },
           onMessage: (from, data) => {
-            const m = data as { k?: string; ts?: number } | null;
-            if (m && m.k === "tap") {
-              setTaps((t) => ({ ...t, [from]: (t[from] ?? 0) + 1 }));
-              link?.send(from, { k: "ack", ts: m.ts });
-            }
+            party.message(from, data, Date.now());
+            flush();
           },
         });
-        linkRef.current = link;
         link.start();
+
+        // Jam permainan: hitung mundur, lomba, pemberitahuan. Menggambar ulang hanya bila ada perubahan.
+        let seen = -1;
+        timer = setInterval(() => {
+          party.tick(Date.now());
+          flush();
+          if (party.version !== seen) {
+            seen = party.version;
+            setView(party.view());
+          }
+        }, TICK_MS);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Terjadi kesalahan.");
       }
@@ -122,10 +160,23 @@ export default function ScreenPage() {
 
     return () => {
       cancelled = true;
+      if (timer) clearInterval(timer);
       link?.stop();
-      linkRef.current = null;
+      partyRef.current = null;
     };
   }, [epoch]);
+
+  // Papan ketik di layar bertindak sebagai host (berguna untuk uji di laptop).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const d = KEY_TO_DIR[e.key];
+      if (!d || e.repeat) return;
+      e.preventDefault();
+      partyRef.current?.navAsHost(d, Date.now());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // QR berisi alamat gabung langsung dengan kode, supaya HP tidak perlu mengetik.
   useEffect(() => {
@@ -148,7 +199,6 @@ export default function ScreenPage() {
     setEpoch((e) => e + 1);
   };
 
-  const total = Object.values(taps).reduce((a, b) => a + b, 0);
   const ended = status === "closed" && reason !== "stopped";
 
   if (error) {
@@ -165,48 +215,21 @@ export default function ScreenPage() {
   }
 
   return (
-    <main className="tv">
-      <section className="stack" aria-label="Cara bergabung">
-        <h1 className="title">Gabung dari HP</h1>
-        <ol className="steps">
-          <li>
-            Buka <strong>{origin ? origin.replace(/^https?:\/\//, "") : "…"}/join</strong> di HP
-          </li>
-          <li>Masukkan kode ini, atau pindai QR</li>
-        </ol>
-        <div className="code" role="img" aria-label={code ? `Kode sesi: ${code.split("").join(" ")}` : "Kode sesi sedang dibuat"}>
-          {code ?? "·····"}
-        </div>
-        {qr && (
-          <div className="qr" role="img" aria-label="QR untuk bergabung" dangerouslySetInnerHTML={{ __html: qr }} />
-        )}
-      </section>
+    <main className="screen-root">
+      <StatusBanner status={status} reason={reason} />
+      {ended && (
+        <button className="btn btn-primary btn-lg" onClick={newSession}>
+          Buat sesi baru
+        </button>
+      )}
 
-      <section className="stack" aria-label="Pemain">
-        <StatusBanner status={status} reason={reason} />
-        {ended && (
-          <button className="btn btn-primary btn-lg" onClick={newSession}>
-            Buat sesi baru
-          </button>
-        )}
-        <h2 className="title">Pemain ({players.length})</h2>
-        {players.length === 0 ? (
-          <p className="muted">Belum ada yang bergabung. Buka {APP_NAME} di HP lalu masukkan kodenya.</p>
-        ) : (
-          <ul className="players" aria-live="polite">
-            {players.map((p) => (
-              <li key={p.id} className="player">
-                <PlayerBadge id={p.id} size={48} />
-                <span className="player-name">{p.nickname}</span>
-                <span className="count" aria-label={`${taps[p.id] ?? 0} ketukan`}>
-                  {taps[p.id] ?? 0}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="muted">Total ketukan: {total}</p>
-      </section>
+      {view.phase === "lobby" && <LobbyScene view={view} code={code} qr={qr} origin={origin} />}
+      {view.phase === "menu" && <MenuScene view={view} />}
+      {view.phase === "countdown" && <CountdownScene view={view} />}
+      {view.phase === "race" && <RaceScene view={view} />}
+      {view.phase === "results" && <ResultsScene view={view} />}
+
+      {view.phase !== "lobby" && code && <div className="corner-code">Kode {code}</div>}
     </main>
   );
 }
