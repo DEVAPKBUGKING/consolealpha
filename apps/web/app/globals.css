@@ -304,3 +304,265 @@ html[data-surface="tv"] body {
   font-size: var(--text-sm);
   line-height: var(--text-sm-line);
 }
+
+/* ======================================================= layar: adegan pesta */
+
+.screen-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-height: calc(100dvh - 2 * var(--safe-y));
+}
+.scene {
+  flex: 1;
+}
+.center-scene {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-4);
+}
+.tag {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-line);
+  font-weight: 700;
+}
+.corner-code {
+  position: fixed;
+  right: var(--space-5);
+  bottom: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-line);
+  letter-spacing: 0.1em;
+}
+
+/* menu */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+}
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 9rem;
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
+}
+.tile-focus {
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-focus);
+  transform: scale(1.06);
+}
+.tile-off {
+  opacity: 0.55;
+}
+.tile-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: var(--text-xl-line);
+  font-weight: var(--text-xl-weight);
+}
+
+/* hitung mundur */
+.countdown {
+  font-family: var(--font-display);
+  font-size: calc(var(--text-huge) * 1.6);
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-accent);
+}
+
+/* lomba */
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.lane {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  align-items: center;
+  gap: var(--space-4);
+}
+.lane-name {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-line);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track {
+  position: relative;
+  height: 4rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.finish-line {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--space-3);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-text) 0 var(--space-1),
+    var(--color-bg) var(--space-1) var(--space-2)
+  );
+}
+.runner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  transition: left var(--dur-base) linear, transform var(--dur-base) linear;
+}
+.runner.running svg {
+  animation: bob calc(var(--dur-base) * 1.5) ease-in-out infinite alternate;
+}
+@keyframes bob {
+  from {
+    transform: translateY(calc(-1 * var(--space-1)));
+  }
+  to {
+    transform: translateY(var(--space-1));
+  }
+}
+
+/* hasil */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.place {
+  width: 3rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: var(--text-xl-line);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* ============================================ controller: fase, tombol arah */
+
+.ctl-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ctl-center {
+  align-items: center;
+  text-align: center;
+}
+.btn-xl {
+  width: 100%;
+  min-height: 5rem;
+  font-size: var(--text-xl);
+  line-height: var(--text-xl-line);
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 5rem);
+  grid-template-rows: repeat(3, 5rem);
+  grid-template-areas:
+    ". up ."
+    "left ok right"
+    ". down .";
+  gap: var(--space-3);
+  justify-content: center;
+}
+.dpad-btn {
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+}
+.dpad-btn:active:not(:disabled) {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent);
+}
+.dpad-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.dp-up {
+  grid-area: up;
+}
+.dp-left {
+  grid-area: left;
+}
+.dp-ok {
+  grid-area: ok;
+  border-radius: var(--radius-pill);
+}
+.dp-right {
+  grid-area: right;
+}
+.dp-down {
+  grid-area: down;
+}
+
+.race-ctl {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.progress {
+  height: var(--space-4);
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width var(--dur-fast) linear;
+}
+.mini-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-line);
+}
+.mini-results .mine {
+  font-weight: 700;
+  color: var(--color-accent);
+}
